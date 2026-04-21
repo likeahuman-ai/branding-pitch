@@ -23,7 +23,7 @@ This skill composes three existing tools. **All three must be installed** for `/
 
 | Plugin | Used for | Install |
 |--------|---------|---------|
-| **Krea.ai** (image + video generation) | AI stills (`nano-banana-pro`, `nano-banana-flash`) and videos (`kling-2.5`) | Requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
+| **Krea.ai skills** (image + video generation) | AI stills (`nano-banana-pro`, `nano-banana-flash`) and videos (`kling-2.5`, `seedance`, `hailuo-2.3`) | Install: `npx skills add krea-ai/skills`. Also requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
 | **frontend-design** (Anthropic official) | `/frontend-design` — builds the landing page from the brand's DNA | `/plugin marketplace add anthropics/claude-plugins-official` then `/plugin install frontend-design` |
 | **[impeccable](https://github.com/pbakaus/impeccable)** | `/typeset`, `/polish`, `/critique`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill` — the quality loop | `/plugin marketplace add pbakaus/impeccable` then `/plugin install impeccable` |
 

@@ -2,6 +2,13 @@
 
 All notable changes to `branding-pitch` will be documented in this file.
 
+## [1.1.1] — 2026-04-21
+
+Docs patch — correct Krea.ai install path.
+
+### Fixed
+- **Krea.ai install command added** to README and SKILL.md. The correct install is `npx skills add krea-ai/skills` (via the AgentSkills.io CLI), then set `KREA_API_TOKEN` + install `uv`. Previous docs just said "requires Krea.ai skill installed" without telling you how.
+
 ## [1.1.0] — 2026-04-21
 
 Claude Design compatibility + modern skill schema.
