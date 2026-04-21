@@ -2,6 +2,19 @@
 
 All notable changes to `branding-pitch` will be documented in this file.
 
+## [1.0.2] — 2026-04-20
+
+Major production-knowledge release. No breaking changes.
+
+### Added
+- **Phase 4B: Reference strategy.** Comprehensive decision tree for when to use `--image-url` and when to skip it, per shot type. Covers product locks, character sheets, logo refs, and why brand-style references contaminate output.
+- **The "still-first → animate" pattern for videos.** Critical workflow for consistent product/character videos: generate the locked still first (with `--image-url` product reference), then feed THAT still as the starting frame to the video model. Zero product drift across still + video pairs.
+- **Complete model decision tree** covering all Krea models: `nano-banana-pro` / `nano-banana-flash` / `flux-kontext` for stills; `kling-2.5` / `seedance` / `hailuo-2.3` for video, with explicit guidance on when each video engine is appropriate (Seedance for fluid motion, Kling for physics, Hailuo as fallback).
+- **Video engine routing.** When to pick Kling vs Seedance — Kling for realistic physics and push-ins, Seedance for fluid dynamics (liquid, fabric, dance, rotation), Hailuo only as rate-limit fallback.
+
+### Why this matters
+Earlier versions told users which models to use at a high level but didn't codify WHEN to use image references or the still-first video pattern — which are the two biggest levers for campaign consistency. Without the still-first pattern, product videos generate similar-but-wrong products every time.
+
 ## [1.0.1] — 2026-04-20
 
 Correction + portability release. No breaking changes.

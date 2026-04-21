@@ -331,6 +331,96 @@ For character-referenced shots, prefix:
 
 ---
 
+## Phase 4B: Reference strategy (when to lock, when to let AI decide)
+
+Reference images (`--image-url`) lock specific visual elements across generations. Use them when you need **consistency** (same product across 8 shots, same face across a campaign); skip them when you need **variety** (location B-roll, texture macros, abstract moods).
+
+### Should this shot use `--image-url`?
+
+| Scenario | Use ref? | Reference type |
+|----------|---------|----------------|
+| Hero product shot — must show THE actual product | **Yes** | Clean product photo (brand-provided or prior gen) |
+| Product in environment (multiple angles/locations) | **Yes — for the product, not the location** | Product photo only |
+| Detail macro, texture | No | Let the prompt describe materials / weave / grain |
+| Flat lay composition | No | Composition needs freedom to arrange props |
+| Character/person across ≥2 shots | **Yes — mandatory** | Character sheet (from Phase 2) |
+| Logo placement shot | **Yes**, but expect imperfection | Logo SVG → PNG 1024×1024 |
+| Location / environment only | No | — |
+| Brand mood / style lock | **No** — describe mood in prompt instead | Ref drags composition + lighting too hard |
+
+### Preparing references
+
+**Product reference.** User provides a clean product photo (ideally studio with neutral background). Save to `reference/product-clean.png`. Feed as `--image-url "reference/product-clean.png"` to every shot that must lock THIS product. Prompt prefix: `"This exact product from the reference image, shown in [context]..."`
+
+**Logo reference.** Download SVG from brand site → convert to PNG at 1024×1024 with solid background (`npx sharp-cli` or Figma export). Feed as `--image-url` where the logo must appear. **Warning:** generative models rarely render text/logos perfectly. Treat logo-in-shot as supplementary, not hero.
+
+**Character sheet.** See Phase 2 — composite + `nano-banana-flash`.
+
+**Brand-style reference — DON'T.** Feeding a styled brand image as `--image-url` contaminates the generated image's composition, lighting, and color grade along with the subject. Describe the style in the prompt instead. Image-ref is for specific SUBJECTS (product, face, logo), not mood.
+
+### Video-specific: the "still-first → animate" pattern
+
+Video models (Kling, Seedance, Hailuo) support two modes:
+
+**Text-to-video (no reference).** Good for: ambient scenes, location B-roll, abstract motion, textures, environmental video. Prompt-only.
+
+**Image-to-video (starting-frame reference).** Good for: animating a specific product, keeping character consistency across video+still, preserving a hero frame's exact color grade. This is the critical pattern for consistent campaigns.
+
+**The workflow when you need a consistent product or character in a video:**
+
+1. **Generate the starting still first** — with `nano-banana-pro` (or `nano-banana-flash` for character) + `--image-url "reference/product.png"` as product reference. This locks the generated still to the brand's actual product.
+2. **Feed THAT generated still as the starting frame to the video model** — so the video animates from the exact frame you already approved. Zero product drift.
+3. **Result** — the product in the video is identical to the hero still. Same lighting, same angle, same branding.
+
+Example command sequence:
+
+```bash
+# Step 1: locked still with product reference
+uv run [krea]/scripts/generate_image.py \
+  --prompt "Hero product shot..." \
+  --image-url "reference/product-clean.png" \
+  --filename "images/01-hero-still.png" \
+  --model nano-banana-pro --width 1280 --height 1024
+
+# Step 2: animate from that still
+uv run [krea]/scripts/generate_video.py \
+  --prompt "Gentle camera push-in, product stays in frame, subtle material shimmer..." \
+  --image-url "images/01-hero-still.png" \
+  --filename "video/01-hero.mp4" \
+  --model kling-2.5 --duration 5 --aspect-ratio 16:9
+```
+
+**Never skip the still-first step for product videos.** Text-to-video alone will generate a similar-but-wrong product every time.
+
+### Model selection — complete decision tree
+
+| Need | Model | CU | Notes |
+|------|-------|-----|-------|
+| **Stills** | | | |
+| Hero product (pristine photorealism) | `nano-banana-pro` | 119 | Default for product / food / still life |
+| Character still (face lock from ref) | `nano-banana-flash` | 48 | Mandatory when using character sheet |
+| Character sheet composite (2×2 face grid) | `nano-banana-flash` | 48 | Phase 2 only |
+| Detail macro, texture, flat lay | `nano-banana-pro` | 119 | Prompt-driven, no ref |
+| Logo composition | `nano-banana-pro` + logo ref | 119 | Expect imperfect text rendering |
+| Style transfer / heavy manipulation | `flux-kontext` | varies | Avoid for character sheets (goes cartoon) |
+| **Videos** | | | |
+| Ambient / location B-roll (text-to-video) | `kling-2.5` text mode | 282 | No reference — prompt-only, 5s |
+| Product animation (still-first pattern) | `kling-2.5` image-to-video | 282 | Starting frame = approved still |
+| Character action (still-first pattern) | `kling-2.5` image-to-video | 282 | Starting frame = character sheet or prior shot |
+| Alternative engine (fluid motion) | `seedance` | varies | When Kling feels wrong — Seedance is smoother for product rotations + dance/flow |
+| Fluid organic motion (liquid, fabric) | `seedance` | varies | Seedance handles fluid dynamics better than Kling |
+| Fallback (if `kling-2.5` returns 402) | `hailuo-2.3` | 180 | Rate-limit / outage only |
+
+### Which video engine for what
+
+- **Kling 2.5** — realistic physics, strong camera moves, good for product push-ins and human action. Default.
+- **Seedance** — smoother continuous motion, better for fluid dynamics (liquid pouring, fabric flow, dance, rotation). Alternative when Kling's output feels too staccato.
+- **Hailuo 2.3** — fallback only when Kling is rate-limited.
+
+If in doubt: generate a 5s Kling first. If the result feels stiff or the motion breaks the product/character, re-run on Seedance with the same starting frame.
+
+---
+
 ## Phase 5: Generation
 
 **Model selection:**
