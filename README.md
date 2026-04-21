@@ -8,7 +8,7 @@
 
 ## What it does
 
-You point `/brand-pitch` at a brand. You get a served landing page in 5–15 minutes.
+You point `/pitch` at a brand. You get a served landing page in 5–15 minutes.
 
 1. **Extracts the brand's visual DNA** — fonts, colors, photography signature, implied technical choices, and the emotional *why* behind the brand — all from the brand's own website + optional deeper web research
 2. **Plans a photography campaign** — ~6 stills + 2 videos, category-appropriate (products get hero/three-quarter/macro/flat-lay/environment/lifestyle; food gets spreads/macros/ingredients/environment; service shoots use a character sheet)
@@ -26,7 +26,7 @@ Three patterns make this plugin genuinely different from "prompt Krea yourself":
 
 ### 1. The visual-DNA phase actually understands the brand
 
-Most AI branding tools grab a hex color and a Google Font, call it "extracted brand", and move on. `brand-pitch` goes further:
+Most AI branding tools grab a hex color and a Google Font, call it "extracted brand", and move on. `/pitch` goes further:
 
 - **Photographic signature** — lighting choice, color grading, composition, subject scale, texture treatment
 - **Implied technical choices** — what camera/lens/aperture would a real photographer use to shoot this brand? (Patagonia → Leica Q3 28mm f/2.8. Aesop → Hasselblad X2D 80mm f/4.)
@@ -86,12 +86,12 @@ This skill composes **three existing plugins**. All three must be installed for 
 **Optional:**
 - `/high-end-visual-design` — if you have it, run after `/frontend-design` for extra agency-feel details. If not, `/polish` covers most of the same ground.
 
-Without the three required plugins, `brand-pitch` surfaces a clear error pointing at the missing dep — it does NOT silently degrade.
+Without the three required plugins, `/pitch` surfaces a clear error pointing at the missing dep — it does NOT silently degrade.
 
 **Tools used (available to every Claude Code install by default):**
 `WebFetch` · `WebSearch` · `Explore` subagent · `Bash`. No custom MCP servers or personal agents required.
 
-**Optional browsing upgrades for JS-heavy brand sites:** Claude for Chrome, `surf-cli`, or Playwright MCP. See the [skill docs](./skills/brand-pitch/SKILL.md#optional-enhanced-browsing-if-the-user-has-the-tools) for details. `WebFetch` covers ~80% of brands on its own.
+**Optional browsing upgrades for JS-heavy brand sites:** Claude for Chrome, `surf-cli`, or Playwright MCP. See the [skill docs](./skills/pitch/SKILL.md#optional-enhanced-browsing-if-the-user-has-the-tools) for details. `WebFetch` covers ~80% of brands on its own.
 
 ---
 
@@ -100,7 +100,7 @@ Without the three required plugins, `brand-pitch` surfaces a clear error pointin
 ### Full pitch (default — ~10–15 min)
 
 ```bash
-/brand-pitch
+/pitch
 ```
 
 Interactive flow:
@@ -114,7 +114,7 @@ Interactive flow:
 ### Quick mode (~5–6 min)
 
 ```bash
-/brand-pitch --quick
+/pitch --quick
 # or say "quick", "fast", "demo mode"
 ```
 
@@ -123,7 +123,7 @@ Single WebFetch for brand research · 4 stills + 1 video · 8-section page · sk
 ### Full polish loop (opt-in — adds ~3–5 min)
 
 ```bash
-/brand-pitch --full-polish
+/pitch --full-polish
 ```
 
 Runs `/typeset` → `/polish` → `/critique` after the page builds, instead of the default critique-first loop. Use for production-grade client deliverables.
@@ -131,7 +131,7 @@ Runs `/typeset` → `/polish` → `/critique` after the page builds, instead of 
 ### One-shot with brief
 
 ```bash
-/brand-pitch "Patagonia Cumbre — sustainable hiking boot, mountain editorial direction"
+/pitch "Patagonia Cumbre — sustainable hiking boot, mountain editorial direction"
 ```
 
 ---
@@ -214,7 +214,7 @@ Most AI branding tools skip the hard parts:
 - They run every polish skill by default — it's slow, usually overkill
 - They use a fixed template — every output looks the same
 
-`brand-pitch` does the opposite on each: inline visual-DNA deconstruction, strategic reference-image use, still-first → animate video pattern, critique-first lean polish loop, and authentic brand-driven layouts from `/frontend-design`.
+`/pitch` does the opposite on each: inline visual-DNA deconstruction, strategic reference-image use, still-first → animate video pattern, critique-first lean polish loop, and authentic brand-driven layouts from `/frontend-design`.
 
 ---
 
@@ -238,21 +238,21 @@ Particularly interested in:
 
 ## Works with Claude Design (claude.ai/design)
 
-[Claude Design](https://claude.ai/design) (Anthropic Labs) is the visual-editor conversational design studio. `brand-pitch` is a different tool with a different shape:
+[Claude Design](https://claude.ai/design) (Anthropic Labs) is the visual-editor conversational design studio. `/pitch` is a different tool with a different shape:
 
 | You want | Use |
 |----------|-----|
 | Visual editing with inline knobs, live tweaks, Canva/PPTX export | **Claude Design** |
-| Full AI-photography-plus-page pipeline with brand-DNA research, real photography, and served code | **`/brand-pitch`** |
-| A Claude Design handoff bundle needs production photography + code | **Both** — design in Claude Design, bring the handoff into Claude Code, then invoke `/brand-pitch` to add the shoot + landing page |
+| Full AI-photography-plus-page pipeline with brand-DNA research, real photography, and served code | **`/pitch`** |
+| A Claude Design handoff bundle needs production photography + code | **Both** — design in Claude Design, bring the handoff into Claude Code, then invoke `/pitch` to add the shoot + landing page |
 
-`brand-pitch` runs in Claude Code (CLI, web app, IDE extensions) — the same surface where Claude Design handoffs land. Claude Design doesn't expose a public plugin API yet, so there's no native integration — the two products compose via the shared Claude Code surface.
+`/pitch` runs in Claude Code (CLI, web app, IDE extensions) — the same surface where Claude Design handoffs land. Claude Design doesn't expose a public plugin API yet, so there's no native integration — the two products compose via the shared Claude Code surface.
 
 ---
 
 ## Related plugins
 
-- **[font-hunt](https://github.com/likeahuman-ai/font-hunt)** — when you want to steer a brand AWAY from its default fonts (or help a new brand pick). Often run before `/brand-pitch` to lock fonts.
+- **[font-hunt](https://github.com/likeahuman-ai/font-hunt)** — when you want to steer a brand AWAY from its default fonts (or help a new brand pick). Often run before `/pitch` to lock fonts.
 - **[coding-standards](https://github.com/likeahuman-ai/coding-standards)** — to enforce code quality on the generated landing page
 - **[impeccable](https://github.com/pbakaus/impeccable)** — the design skill suite this plugin composes
 - **[frontend-design](https://github.com/anthropics/claude-plugins-official)** — Anthropic's official landing-page skill

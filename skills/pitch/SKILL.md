@@ -1,12 +1,12 @@
 ---
-name: brand-pitch
+name: pitch
 description: Pitch a brand end-to-end — analyze the brand's visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page served locally. For agencies, freelancers, or founders presenting a brand or product concept.
-when_to_use: When the user says "brand pitch", "pitch this brand", "build a brand page", "analyze and pitch", "make a landing page for [brand]", "branding pitch", "do a full brand build", "creative director for", "turn this brand into a page", "generate brand assets + landing page". Also a strong alternative to claude.ai/design when the user wants the full AI-photography-plus-page pipeline rather than visual editing, or when a Claude Design handoff bundle arrives without photography and needs a full shoot + implementation.
+when_to_use: When the user says "pitch", "pitch this brand", "brand pitch", "build a brand page", "analyze and pitch", "make a landing page for [brand]", "branding pitch", "do a full brand build", "creative director for", "turn this brand into a page", "generate brand assets + landing page". Also a strong alternative to claude.ai/design when the user wants the full AI-photography-plus-page pipeline rather than visual editing, or when a Claude Design handoff bundle arrives without photography and needs a full shoot + implementation.
 argument-hint: "[brand name or URL]"
 user-invocable: true
 ---
 
-# Brand Pitch — Analyze, Generate, Pitch
+# Pitch — Analyze, Generate, Present
 
 Take a brand (name, URL, Instagram, or rough concept) and produce a complete pitch package in one flow:
 
@@ -19,7 +19,7 @@ Take a brand (name, URL, Instagram, or rough concept) and produce a complete pit
 
 ## Required companion plugins
 
-This skill composes three existing tools. **All three must be installed** for `/brand-pitch` to run end-to-end:
+This skill composes three existing tools. **All three must be installed** for `/pitch` to run end-to-end:
 
 | Plugin | Used for | Install |
 |--------|---------|---------|
@@ -30,7 +30,7 @@ This skill composes three existing tools. **All three must be installed** for `/
 **Optional enhancement:**
 - `/high-end-visual-design` — if installed, run it after `/frontend-design` for extra agency-feel details. If not installed, `/polish` covers most of the same concerns.
 
-If any required plugin is missing, `brand-pitch` surfaces a clear error pointing at the dependency — it does NOT silently fall back to degraded output.
+If any required plugin is missing, `/pitch` surfaces a clear error pointing at the dependency — it does NOT silently fall back to degraded output.
 
 **Tools used (available to every Claude Code install by default):**
 - `WebFetch` — for brand homepage research
@@ -332,9 +332,19 @@ For character-referenced shots, prefix:
 
 ---
 
-## Phase 4B: Reference strategy (when to lock, when to let AI decide)
+## Phase 4B: Reference strategy (our opinionated guidance)
 
-Reference images (`--image-url`) lock specific visual elements across generations. Use them when you need **consistency** (same product across 8 shots, same face across a campaign); skip them when you need **variety** (location B-roll, texture macros, abstract moods).
+> The official `krea-ai/skills` repo documents the `--image-url` (stills) and `--start-image` (videos) parameters but doesn't prescribe WHEN to use them per shot type. The guidance below is our production-tested strategy from running real client pitches — use it as a starting point, not gospel.
+
+**The parameter split — don't mix these up:**
+
+| Param | Script | Use |
+|-------|--------|-----|
+| `--image-url` | `generate_image.py` | Image-to-image — pass a reference photo to lock product / character / logo |
+| `--start-image` | `generate_video.py` | Image-to-video — the starting frame of the video animation |
+| `--end-image` | `generate_video.py` | Optional — ending frame for interpolation-style motion |
+
+Reference images lock specific visual elements across generations. Use them when you need **consistency** (same product across 8 shots, same face across a campaign); skip them when you need **variety** (location B-roll, texture macros, abstract moods).
 
 ### Should this shot use `--image-url`?
 
@@ -365,7 +375,7 @@ Video models (Kling, Seedance, Hailuo) support two modes:
 
 **Text-to-video (no reference).** Good for: ambient scenes, location B-roll, abstract motion, textures, environmental video. Prompt-only.
 
-**Image-to-video (starting-frame reference).** Good for: animating a specific product, keeping character consistency across video+still, preserving a hero frame's exact color grade. This is the critical pattern for consistent campaigns.
+**Image-to-video (via `--start-image`).** Good for: animating a specific product, keeping character consistency across video+still, preserving a hero frame's exact color grade. This is the critical pattern for consistent campaigns. Note: the video param is `--start-image`, NOT `--image-url` (that's the stills param — don't mix them up).
 
 **The workflow when you need a consistent product or character in a video:**
 
@@ -383,12 +393,15 @@ uv run [krea]/scripts/generate_image.py \
   --filename "images/01-hero-still.png" \
   --model nano-banana-pro --width 1280 --height 1024
 
-# Step 2: animate from that still
+# Step 2: animate from that still (note: --start-image, NOT --image-url)
 uv run [krea]/scripts/generate_video.py \
   --prompt "Gentle camera push-in, product stays in frame, subtle material shimmer..." \
-  --image-url "images/01-hero-still.png" \
+  --start-image "images/01-hero-still.png" \
   --filename "video/01-hero.mp4" \
   --model kling-2.5 --duration 5 --aspect-ratio 16:9
+
+# Optional: add --end-image for interpolation-style motion
+# --end-image "images/01-hero-final.png"
 ```
 
 **Never skip the still-first step for product videos.** Text-to-video alone will generate a similar-but-wrong product every time.
@@ -447,11 +460,22 @@ uv run [krea-plugin-path]/scripts/generate_image.py \
   --filename "05-chef-plating.png" \
   --model nano-banana-flash --width 1024 --height 1280
 
-# Video
+# Video — text-to-video (ambient / no reference)
 uv run [krea-plugin-path]/scripts/generate_video.py \
   --prompt "..." --filename "07-hero.mp4" \
   --model kling-2.5 --duration 5 --aspect-ratio 16:9
+
+# Video — image-to-video (still-first → animate)
+uv run [krea-plugin-path]/scripts/generate_video.py \
+  --prompt "Gentle camera push-in, product stays in frame..." \
+  --start-image "images/01-hero-still.png" \
+  --filename "video/01-hero.mp4" \
+  --model kling-2.5 --duration 5 --aspect-ratio 16:9
 ```
+
+**Parameter reference (from the official `krea-ai/skills` repo):**
+- **Stills** (`generate_image.py`): `--prompt`, `--filename`, `--model`, `--width`, `--height`, `--aspect-ratio`, `--image-url` (for image-to-image with a reference), `--style-id`, `--style-strength`, `--seed`, `--steps`, `--guidance-scale`, `--quality`, `--batch-size`, `--output-dir`.
+- **Videos** (`generate_video.py`): `--prompt`, `--filename`, `--model`, `--duration`, `--aspect-ratio`, `--start-image` (for image-to-video starting frame — NOT `--image-url`), `--end-image` (optional — ending frame for interpolation-style videos), `--resolution`, `--mode`, `--generate-audio`, `--output-dir`.
 
 Resolve `[krea-plugin-path]` at invocation. Common locations:
 - `~/.claude/plugins/cache/*/krea-ai/*/scripts/`

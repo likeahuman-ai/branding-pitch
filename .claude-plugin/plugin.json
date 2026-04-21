@@ -1,7 +1,7 @@
 {
   "name": "branding-pitch",
-  "description": "Pitch a brand end-to-end — analyze its visual DNA, generate an AI photography + video campaign (~6 images + 2 videos) with proper reference-image + still-first-then-animate consistency patterns, build a polished editorial landing page, served locally. Composes Krea.ai (nano-banana-pro, nano-banana-flash, kling-2.5, seedance, hailuo-2.3) with Anthropic's frontend-design plugin and the impeccable typeset/polish/critique skills. Complements claude.ai/design for users who want the full pipeline over visual editing.",
-  "version": "1.1.1",
+  "description": "Pitch a brand end-to-end — analyze its visual DNA, generate an AI photography + video campaign (~6 images + 2 videos) with proper reference-image + still-first-then-animate consistency patterns, build a polished editorial landing page, served locally. Slash command is /pitch. Composes Krea.ai (nano-banana-pro, nano-banana-flash, kling-2.5, seedance, hailuo-2.3) with Anthropic's frontend-design plugin and the impeccable typeset/polish/critique skills. Complements claude.ai/design for users who want the full pipeline over visual editing.",
+  "version": "1.2.0",
   "author": {
     "name": "LikeAHuman.ai",
     "email": "academy@likeahuman.ai",
@@ -13,6 +13,7 @@
   "keywords": [
     "branding",
     "brand-pitch",
+    "pitch",
     "landing-page",
     "ai-photography",
     "krea-ai",

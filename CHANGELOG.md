@@ -2,6 +2,19 @@
 
 All notable changes to `branding-pitch` will be documented in this file.
 
+## [1.2.0] — 2026-04-21
+
+User-facing rename + Krea.ai parameter bugfix.
+
+### Changed (breaking)
+- **Slash command renamed: `/brand-pitch` → `/pitch`.** Shorter, verb-forward, no collision with built-in `/init` or generic `/start`. Plugin repo name stays `branding-pitch` (the namespace), but the command you type is `/pitch`. Skill directory renamed `skills/brand-pitch/` → `skills/pitch/`.
+
+### Fixed
+- **Video starting-frame parameter corrected.** Previous SKILL.md examples used `--image-url` for video starting frames — that's wrong. The correct Krea.ai parameter for videos is `--start-image` (`--image-url` is stills-only). Fixed all video examples. The still-first → animate pattern now uses the right param.
+- **Added `--end-image` documentation** for interpolation-style videos (optional ending frame).
+- **Complete parameter reference** now in Phase 5, sourced from the official `krea-ai/skills` repo: all `generate_image.py` params (`--image-url`, `--style-id`, `--style-strength`, `--seed`, `--steps`, `--guidance-scale`, `--quality`, `--batch-size`) and all `generate_video.py` params (`--start-image`, `--end-image`, `--resolution`, `--mode`, `--generate-audio`).
+- **Reframed Phase 4B** as "our opinionated guidance" with explicit note that the WHEN-to-use-references strategy is production-tested recipe, not official Krea docs.
+
 ## [1.1.1] — 2026-04-21
 
 Docs patch — correct Krea.ai install path.
