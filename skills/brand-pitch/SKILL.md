@@ -1,6 +1,7 @@
 ---
 name: brand-pitch
-description: Pitch a brand end-to-end — analyze the brand's visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page served locally. For agencies, freelancers, or founders presenting a brand or product concept. Triggers on "brand pitch", "pitch this brand", "build a brand page", "analyze and pitch", "make a landing page for", "branding pitch", or similar brand-to-page requests.
+description: Pitch a brand end-to-end — analyze the brand's visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page served locally. For agencies, freelancers, or founders presenting a brand or product concept.
+when_to_use: When the user says "brand pitch", "pitch this brand", "build a brand page", "analyze and pitch", "make a landing page for [brand]", "branding pitch", "do a full brand build", "creative director for", "turn this brand into a page", "generate brand assets + landing page". Also a strong alternative to claude.ai/design when the user wants the full AI-photography-plus-page pipeline rather than visual editing, or when a Claude Design handoff bundle arrives without photography and needs a full shoot + implementation.
 argument-hint: "[brand name or URL]"
 user-invocable: true
 ---

@@ -236,9 +236,23 @@ Particularly interested in:
 
 ---
 
+## Works with Claude Design (claude.ai/design)
+
+[Claude Design](https://claude.ai/design) (Anthropic Labs) is the visual-editor conversational design studio. `brand-pitch` is a different tool with a different shape:
+
+| You want | Use |
+|----------|-----|
+| Visual editing with inline knobs, live tweaks, Canva/PPTX export | **Claude Design** |
+| Full AI-photography-plus-page pipeline with brand-DNA research, real photography, and served code | **`/brand-pitch`** |
+| A Claude Design handoff bundle needs production photography + code | **Both** — design in Claude Design, bring the handoff into Claude Code, then invoke `/brand-pitch` to add the shoot + landing page |
+
+`brand-pitch` runs in Claude Code (CLI, web app, IDE extensions) — the same surface where Claude Design handoffs land. Claude Design doesn't expose a public plugin API yet, so there's no native integration — the two products compose via the shared Claude Code surface.
+
+---
+
 ## Related plugins
 
-- **[font-hunt](https://github.com/likeahuman-ai/font-hunt)** — when you want to steer a brand AWAY from its default fonts (or help a new brand pick)
+- **[font-hunt](https://github.com/likeahuman-ai/font-hunt)** — when you want to steer a brand AWAY from its default fonts (or help a new brand pick). Often run before `/brand-pitch` to lock fonts.
 - **[coding-standards](https://github.com/likeahuman-ai/coding-standards)** — to enforce code quality on the generated landing page
 - **[impeccable](https://github.com/pbakaus/impeccable)** — the design skill suite this plugin composes
 - **[frontend-design](https://github.com/anthropics/claude-plugins-official)** — Anthropic's official landing-page skill

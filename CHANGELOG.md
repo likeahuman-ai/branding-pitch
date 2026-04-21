@@ -2,6 +2,14 @@
 
 All notable changes to `branding-pitch` will be documented in this file.
 
+## [1.1.0] — 2026-04-21
+
+Claude Design compatibility + modern skill schema.
+
+### Added
+- **`when_to_use` frontmatter field** following the latest Agent Skills schema — improves automatic triggering, especially when users say things like "turn this handoff into a landing page" or "generate brand assets" without explicitly saying "brand pitch".
+- **Claude Design (claude.ai/design) interop section in README.** `brand-pitch` is documented as a pipeline-style alternative to Claude Design's visual editor, and as a complement when a Claude Design handoff bundle needs production photography + a full landing page. No native plugin API on claude.ai/design yet — this skill runs in Claude Code which is the surface where Claude Design handoffs land.
+
 ## [1.0.2] — 2026-04-20
 
 Major production-knowledge release. No breaking changes.
