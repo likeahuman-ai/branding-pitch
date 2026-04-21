@@ -2,6 +2,27 @@
 
 All notable changes to `branding-pitch` will be documented in this file.
 
+## [1.3.0] — 2026-04-21
+
+Full Krea.ai toolkit coverage + runtime model discovery.
+
+### Added
+- **All 7 Krea.ai scripts now documented** — previously the skill only referenced `generate_image.py` + `generate_video.py`. v1.3.0 adds full coverage of the `npx skills add krea-ai/skills` toolkit:
+  - **`list_models.py`** — live catalog lookup. **Now mandatory** before Phase 5 prompts (Krea's own agent guidance: *"Do NOT invent model names. Run `list_models.py` to get the live list"*).
+  - **`enhance_image.py`** — Topaz upscaling to 22K. New Phase 5 subsection — optional pre-publish enhancement of hero stills to 4K with `topaz-standard-enhance` / `generative-enhance` / `bloom-enhance`.
+  - **`train_style.py`** — custom LoRA training for brand-specific style IDs. New Phase 5 subsection — for extended campaigns, train a brand LoRA once, pass `--style-id` to every subsequent generation.
+  - **`pipeline.py`** — multi-step workflow orchestration (generate → enhance → animate). New Phase 5 subsection — linked to [PIPELINES.md](https://github.com/krea-ai/skills/blob/main/PIPELINES.md) for spec format.
+  - **`get_job.py`** — async job polling. Referenced for completeness.
+- **Expanded video engine coverage**: `wan` and `veo-3` / `veo-3.1-fast` added alongside `kling` and `seedance`. Hailuo stays as fallback.
+- **Krea docs links** — [docs.krea.ai/CLAUDE](https://docs.krea.ai/CLAUDE) (official agent guidance) and [krea-ai/skills on GitHub](https://github.com/krea-ai/skills) surfaced in the Phase 5 toolkit section.
+
+### Changed
+- **Model names throughout SKILL.md reframed as "examples — confirm via `list_models.py`"** rather than hardcoded assumptions. Version tags drift.
+- **Install-path detection improved** — `find ~/.claude -name "generate_image.py" -path "*krea*" | head -1` is now the documented discovery method, with a clear halt-and-point-user message if the script isn't found.
+
+### Why this matters
+v1.2.x treated the Krea.ai dependency as a black box ("call generate_image.py"). v1.3.0 treats it as a toolkit worth knowing — runtime model discovery prevents stale model-name errors, `enhance_image.py` + `train_style.py` unlock real campaign-grade output, and `pipeline.py` makes the skill's recommendations reproducible.
+
 ## [1.2.0] — 2026-04-21
 
 User-facing rename + Krea.ai parameter bugfix.

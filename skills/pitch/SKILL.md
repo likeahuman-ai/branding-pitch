@@ -418,26 +418,65 @@ uv run [krea]/scripts/generate_video.py \
 | Logo composition | `nano-banana-pro` + logo ref | 119 | Expect imperfect text rendering |
 | Style transfer / heavy manipulation | `flux-kontext` | varies | Avoid for character sheets (goes cartoon) |
 | **Videos** | | | |
-| Ambient / location B-roll (text-to-video) | `kling-2.5` text mode | 282 | No reference — prompt-only, 5s |
-| Product animation (still-first pattern) | `kling-2.5` image-to-video | 282 | Starting frame = approved still |
-| Character action (still-first pattern) | `kling-2.5` image-to-video | 282 | Starting frame = character sheet or prior shot |
-| Alternative engine (fluid motion) | `seedance` | varies | When Kling feels wrong — Seedance is smoother for product rotations + dance/flow |
-| Fluid organic motion (liquid, fabric) | `seedance` | varies | Seedance handles fluid dynamics better than Kling |
-| Fallback (if `kling-2.5` returns 402) | `hailuo-2.3` | 180 | Rate-limit / outage only |
+| Ambient / location B-roll (text-to-video) | `kling` (or `veo-3.1-fast`) | ~282 | No reference — prompt-only, 5s |
+| Product animation (still-first pattern) | `kling` image-to-video | ~282 | Starting frame = approved still |
+| Character action (still-first pattern) | `kling` image-to-video | ~282 | Starting frame = character sheet or prior shot |
+| Alternative engine (fluid motion) | `wan` or `seedance` | varies | When Kling feels wrong — these handle fluid motion (liquid, fabric, dance, rotation) more smoothly |
+| High-fidelity cinematic | `veo-3.1-fast` / `veo-3` | varies | Google's video model when you want the most polished look |
+| Fallback (if primary returns 402) | `hailuo-2.3` | ~180 | Rate-limit / outage only |
+
+**Re-run `list_models.py` if any of the above returns a "model not found" error.** Version tags may have shifted since this doc was written.
 
 ### Which video engine for what
 
-- **Kling 2.5** — realistic physics, strong camera moves, good for product push-ins and human action. Default.
-- **Seedance** — smoother continuous motion, better for fluid dynamics (liquid pouring, fabric flow, dance, rotation). Alternative when Kling's output feels too staccato.
-- **Hailuo 2.3** — fallback only when Kling is rate-limited.
+(Engine names below reflect what's in the catalog at write time — run `list_models.py` first to confirm current names.)
 
-If in doubt: generate a 5s Kling first. If the result feels stiff or the motion breaks the product/character, re-run on Seedance with the same starting frame.
+- **Kling** — realistic physics, strong camera moves, good for product push-ins and human action. Default pick.
+- **Seedance / Wan** — smoother continuous motion, better for fluid dynamics (liquid pouring, fabric flow, dance, rotation). Alternatives when Kling's output feels stiff.
+- **Veo 3 / Veo 3.1 fast** — Google's cinematic engine. When you want the most polished, film-like look (budget permitting).
+- **Hailuo 2.3** — fallback only when the primary engine is rate-limited.
+
+If in doubt: generate a 5s Kling first. If the result feels stiff or the motion breaks the product/character, re-run on Wan/Seedance with the same starting frame.
 
 ---
 
 ## Phase 5: Generation
 
-**Model selection:**
+### The full Krea.ai toolkit
+
+`npx skills add krea-ai/skills` installs **7 scripts**. This skill primarily uses 2 (stills + video), but you should know the whole surface:
+
+| Script | Purpose | When `/pitch` uses it |
+|--------|---------|------------------------|
+| `list_models.py` | Fetch the **live** catalog of available models (names, CU costs, per-model accepted params) from the Krea OpenAPI spec | **ALWAYS run first** — before writing prompts, confirm which models exist right now |
+| `generate_image.py` | Text-to-image + image-to-image stills | Every still in Phase 5 |
+| `generate_video.py` | Text-to-video + image-to-video (starting/ending frame) | Every video in Phase 5 |
+| `enhance_image.py` | Upscale to 22K via Topaz (standard/generative/bloom) with creativity, face-enhance, sharpening, denoising controls | **Phase 6 optional** — upscale the hero still to 4K before publishing the landing page |
+| `train_style.py` | Train a custom LoRA on 3–2000 brand reference images with configurable trigger words | **Extended campaigns** — if the brand has 20+ past campaign images, train a brand-specific LoRA and pass `--style-id` to every generation for maximum consistency |
+| `pipeline.py` | Orchestrate multi-step workflows (generate → enhance → animate) in a single command with branching, template variables, parallel execution, resume capability | **Advanced** — chain full sequences in one spec instead of N separate shell invocations |
+| `get_job.py` | Poll async job status by UUID | Rarely called directly — other scripts use it internally |
+
+**Krea's official agent docs:** [docs.krea.ai/CLAUDE](https://docs.krea.ai/CLAUDE) · [github.com/krea-ai/skills](https://github.com/krea-ai/skills)
+
+### CRITICAL — runtime model discovery
+
+Krea's model catalog drifts. Version numbers change. New engines land. **The skill MUST run `list_models.py` before hardcoding model names in prompts.** This is explicit guidance from Krea's own agent docs: *"Do NOT invent model names. Run `list_models.py` to get the **live** list."*
+
+Before Phase 5 begins, run:
+
+```bash
+uv run [krea-path]/scripts/list_models.py --json > /tmp/krea-models.json
+```
+
+Parse the JSON to confirm:
+- Which image models are currently available (`nano-banana-pro`, `flux`, `imagen-4-ultra`, `gpt-image`, etc.)
+- Which video models are currently available (`kling`, `veo-3.1-fast`, `veo-3`, `hailuo-2.3`, `wan`, etc.)
+- Current CU cost per model
+- Per-model accepted parameter names — some models accept `--quality`, some `--mode`, some neither
+
+If the model names below don't appear in the live list, pick the closest equivalent from `list_models.py` output.
+
+### Model selection (examples — not exhaustive, confirm via `list_models.py`)
 - **Stills:** `nano-banana-pro` (119 CU, best photorealism) — default
 - **Character shots:** `nano-banana-flash` (48 CU) — when using face reference
 - **Videos:** `kling-2.5` (282 CU, 5s, realistic physics)
@@ -477,10 +516,47 @@ uv run [krea-plugin-path]/scripts/generate_video.py \
 - **Stills** (`generate_image.py`): `--prompt`, `--filename`, `--model`, `--width`, `--height`, `--aspect-ratio`, `--image-url` (for image-to-image with a reference), `--style-id`, `--style-strength`, `--seed`, `--steps`, `--guidance-scale`, `--quality`, `--batch-size`, `--output-dir`.
 - **Videos** (`generate_video.py`): `--prompt`, `--filename`, `--model`, `--duration`, `--aspect-ratio`, `--start-image` (for image-to-video starting frame — NOT `--image-url`), `--end-image` (optional — ending frame for interpolation-style videos), `--resolution`, `--mode`, `--generate-audio`, `--output-dir`.
 
-Resolve `[krea-plugin-path]` at invocation. Common locations:
+Resolve `[krea-plugin-path]` at invocation. Common locations after `npx skills add krea-ai/skills`:
 - `~/.claude/plugins/cache/*/krea-ai/*/scripts/`
 - `~/.claude/skills/krea-ai/scripts/`
-- Wherever the user's Krea plugin install placed them — `find ~/.claude -name "generate_image.py" | head -1` finds it.
+- Whatever `npx skills` placed locally — `find ~/.claude -name "generate_image.py" -path "*krea*" | head -1` finds it.
+
+If `find` returns nothing, the Krea.ai skills aren't installed — halt with a clear message pointing the user at `npx skills add krea-ai/skills`.
+
+---
+
+### Optional: upscale before publish (`enhance_image.py`)
+
+For the hero still that goes at the top of the landing page, consider upscaling before embedding:
+
+```bash
+uv run [krea-path]/scripts/enhance_image.py \
+  --input "images/01-hero.png" \
+  --output "images/01-hero@4k.png" \
+  --model topaz-standard-enhance \
+  --creativity 0.15 \
+  --face-enhance true
+```
+
+Topaz enhancers: `topaz-standard-enhance` (safe default), `topaz-generative-enhance` (fills in detail), `topaz-bloom-enhance` (softer, editorial). For hero stills at 1280×1024 bumped to 4K, `topaz-standard-enhance` at `--creativity 0.15` is the safe pick — more creativity invents detail, less is literal.
+
+### Optional: train a brand LoRA (`train_style.py`)
+
+For extended campaigns or returning clients, train a brand-specific LoRA once and use its `--style-id` across every generation for maximum consistency:
+
+```bash
+uv run [krea-path]/scripts/train_style.py \
+  --images "reference/brand-archive/*.jpg" \
+  --trigger-word "brandname_v1" \
+  --steps 1500 \
+  --type Style
+```
+
+Returns a style ID. Pass it as `--style-id <id>` to every `generate_image.py` call for that brand. One-time cost, unlimited brand-locked generations afterwards.
+
+### Optional: one-shot pipeline (`pipeline.py`)
+
+For the full campaign in a single command, use `pipeline.py` with a YAML/JSON spec that chains generate → enhance → animate → output. See [krea-ai/skills PIPELINES.md](https://github.com/krea-ai/skills/blob/main/PIPELINES.md) for the format. `/pitch` generates commands inline by default — use `pipeline.py` only when you want to hand off a reproducible spec to the user.
 
 ---
 
