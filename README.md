@@ -2,7 +2,7 @@
 
 > A Claude Code plugin that takes a brand — name, URL, Instagram, or rough concept — and produces a complete pitch package: visual DNA extraction, AI photography + video campaign (~6 images + 2 videos), polished editorial landing page, served locally. In one flow.
 
-**Built by [LikeAHuman.ai](https://likeahuman.ai).**
+**Built by [LikeAHuman.ai](https://likeahuman.ai)** — Stefan Staats, Jasper Staats, Tim Weeda.
 
 ---
 
