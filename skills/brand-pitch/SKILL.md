@@ -18,18 +18,30 @@ Take a brand (name, URL, Instagram, or rough concept) and produce a complete pit
 
 ## Required companion plugins
 
-This skill composes two existing tools. **Both must be installed** for `/brand-pitch` to run end-to-end:
+This skill composes three existing tools. **All three must be installed** for `/brand-pitch` to run end-to-end:
 
 | Plugin | Used for | Install |
 |--------|---------|---------|
-| **[Krea.ai skill](https://github.com/likeahuman-ai/krea-ai)** (or equivalent image-gen setup) | AI image + video generation | Requires `KREA_API_TOKEN` env var and `uv` installed. See the krea-ai README for setup. |
-| **[impeccable](https://github.com/pbakaus/impeccable)** | `/frontend-design`, `/high-end-visual-design`, `/typeset`, `/polish`, `/critique` | `/plugin install pbakaus/impeccable` |
+| **Krea.ai** (image + video generation) | AI stills (`nano-banana-pro`, `nano-banana-flash`) and videos (`kling-2.5`) | Requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
+| **frontend-design** (Anthropic official) | `/frontend-design` — builds the landing page from the brand's DNA | `/plugin marketplace add anthropics/claude-plugins-official` then `/plugin install frontend-design` |
+| **[impeccable](https://github.com/pbakaus/impeccable)** | `/typeset`, `/polish`, `/critique`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill` — the quality loop | `/plugin marketplace add pbakaus/impeccable` then `/plugin install impeccable` |
 
-If either is missing, `brand-pitch` will fail at the corresponding phase — check Phase 5 (generation) or Phase 6 (landing page) output for guidance.
+**Optional enhancement:**
+- `/high-end-visual-design` — if installed, run it after `/frontend-design` for extra agency-feel details. If not installed, `/polish` covers most of the same concerns.
+
+If any required plugin is missing, `brand-pitch` surfaces a clear error pointing at the dependency — it does NOT silently fall back to degraded output.
+
+**Tools used (available to every Claude Code install by default):**
+- `WebFetch` — for brand homepage research
+- `WebSearch` — for deeper brand research (case studies, logo sources)
+- `Explore` subagent — for multi-site research in parallel
+- `Bash` — for `uv run` image generation, local HTTP server
+
+No custom MCP servers, no personal agents required.
 
 ---
 
-## Quick mode (DEFAULT for time-boxed pitches)
+## Quick mode (for time-boxed pitches)
 
 **Target wall-clock:** ~5–6 minutes from "go" to served landing page.
 
@@ -39,11 +51,11 @@ If either is missing, `brand-pitch` will fail at the corresponding phase — che
 
 | Step | Full pipeline | Quick mode |
 |------|---------------|------------|
-| Brand research | `visual-dna-analyst` agent + browser automation + CSS extract | **ONE `WebFetch` on the homepage**, grep the CSS bundle inline |
+| Brand research | `WebFetch` homepage + `Explore` agent for case studies in parallel | **Single `WebFetch`** on the homepage, grep CSS inline |
 | Direction question | 4 options (A/B/C/D) | **1 recommended direction** derived from the CSS, one-line confirm |
-| Shot count | 6–8 stills + 2 videos | **4 stills + 1 video** (hero, detail, lifestyle, macro + 1 rotation video) |
+| Shot count | 6 stills + 2 videos | **4 stills + 1 video** (hero, detail, lifestyle, macro + 1 rotation video) |
 | Landing page sections | 10–12 | **8** — hero · intro · logic I · logic II · magic · video · spec · CTA |
-| Polish loop | `/typeset` → `/polish` → `/critique` | **Skip.** `/frontend-design` + `/high-end-visual-design` output is the deliverable |
+| Polish loop | `/typeset` → `/polish` → `/critique` | **Skip.** `/frontend-design` output is the deliverable |
 | WORKFLOW.md | Full reproducibility | **Skip** |
 
 **Quick mode flow:**
@@ -52,11 +64,11 @@ If either is missing, `brand-pitch` will fail at the corresponding phase — che
 2. `WebFetch` the brand homepage once. Grep fonts + colors from the HTML/CSS. Present a 3-line DNA summary:
    > **[Brand]** — [display font] / [body font], palette `#XXXXXX` `#YYYYYY` `#ZZZZZZ`. Direction: **[one line concept]**. Go, or tweak?
 3. User: "go" (or specifies a tweak)
-4. Write 4 still prompts + 1 video prompt using the 7-Pillar formula (below)
+4. Write 4 still prompts + 1 video prompt using the prompt formula (below)
 5. Dispatch all 5 generations in parallel:
    ```bash
    mkdir -p logs images video
-   uv run ~/.claude/skills/krea-ai/scripts/generate_image.py \
+   uv run [path-to-krea-plugin]/scripts/generate_image.py \
      --prompt "$(cat prompts/01-hero.txt)" \
      --filename "images/01-hero.png" \
      --model nano-banana-pro --width 1280 --height 1024 \
@@ -64,7 +76,7 @@ If either is missing, `brand-pitch` will fail at the corresponding phase — che
    # ... 3 more stills + 1 video in background ...
    wait
    ```
-   (Path to `generate_image.py` depends on where the krea-ai plugin is installed. Check `~/.claude/plugins/` or `~/.claude/skills/` for the actual location.)
+   The `[path-to-krea-plugin]` depends on where the Krea.ai plugin is installed. Check `~/.claude/plugins/` or `~/.claude/skills/` for the actual location.
 6. **While gens run**, draft the 8-section `index.html` using `/frontend-design` with brand tokens hardcoded from the WebFetch result
 7. When gens land: `ls images/` to verify, start `python3 -m http.server 8888`, hand over the URL
 8. Done. No WORKFLOW.md, no polish loop.
@@ -80,11 +92,12 @@ If either is missing, `brand-pitch` will fail at the corresponding phase — che
 ## Full pipeline
 
 ```
-Brand Research → Visual DNA → Design Language → Shot Plan →
+Brand Research (WebFetch + inline visual DNA) → Design Language → Shot Plan →
 Parallel Image Gen → Videos in Background →
-/frontend-design + /high-end-visual-design (build page) →
-/typeset → /polish → /critique → Serve
+/frontend-design (build page) → /critique → targeted fix if needed → Serve
 ```
+
+(Full `/typeset` → `/polish` → `/critique` loop is opt-in via `--full-polish` — saves ~3–5 minutes by default.)
 
 ### Default target output
 
@@ -94,55 +107,80 @@ Parallel Image Gen → Videos in Background →
 
 ---
 
-## Phase 0: Brand Research
+## Phase 0: Brand research + visual DNA
 
-Before any creative work, deeply understand the brand. Run these **in parallel**:
+Before any creative work, understand the brand deeply. This phase has two halves: **technical extraction** (what's on the page) and **visual DNA analysis** (what the design choices *mean*). Both run on standard Claude Code tools — no custom agents required.
 
-### Step 1: Browse the brand
+### Step 1: Fetch the brand homepage (technical extraction)
 
-Use browser automation (`mcp__claude-in-chrome`) or `WebFetch` to visit:
-- Instagram profile — grid aesthetic, bio, tone
-- Website — hero, navigation, overall feel
-- Extract CSS: fonts loaded, color values, backgrounds
+`WebFetch` the brand's website and pull:
+- **Typography** — `<link rel="stylesheet" href="fonts.googleapis.com/...">`, `@font-face` rules, `font-family` declarations. Identify display vs body vs accent roles.
+- **Palette** — hex codes in CSS, `color:` / `background:` / `fill:` values. Separate into primary / secondary / accent.
+- **Layout pattern** — how is the homepage structured? Single-column narrative? Editorial asymmetric grid? Product-first? Full-bleed immersion? Split-screen?
+- **Hero copy + positioning** — what story are they telling in their own words? What tone?
 
-### Step 2: Visual DNA agent (background)
+### Step 2: Visual DNA analysis (done inline — no external agent needed)
 
-If available, spawn the `visual-dna-analyst` agent to research the brand's visual identity:
-```
-Agent({
-  subagent_type: "visual-dna-analyst",
-  description: "Extract visual DNA for [brand]",
-  prompt: "Analyze the visual identity of [brand]. Extract: fonts, color palette, photography style, brand personality, what makes them distinctive.",
-  run_in_background: true
-})
-```
+Deconstruct the brand's visual signature. For each dimension, name what you observe AND the *why* behind it:
 
-If the agent isn't installed, do the analysis inline from WebFetch results.
+**A. Photographic signature.** From the brand's hero image(s) + any in-page imagery:
+- **Lighting choice** — hard studio / soft diffused / golden hour / overcast / mixed sources. What color temperature is implied?
+- **Color grading** — desaturated cinematic / warm natural / cool editorial / high-contrast mono / saturated commercial
+- **Composition** — subject-centered / rule-of-thirds / negative-space heavy / maximalist / architectural
+- **Subject scale** — human as hero / human small in landscape / product-only / texture-only
+- **Texture treatment** — pristine CGI-polished / film grain natural / matte editorial / sharp commercial
 
-### Step 3: Explore agent (background)
+**B. Implied technical choices.** What camera/lens/aperture would a real photographer use to shoot this brand? Translate the feel into gear:
+- Documentary desaturated → Leica Q3, 28mm, f/2.8
+- Luxury pristine product → Hasselblad X2D, 80mm, f/4
+- Golden-hour editorial → ARRI Alexa / Sony A7IV, 50–85mm, f/1.8
+- Moody intimate interior → Leica SL2, 50mm, f/1.4
 
-Search for design case studies, Behance portfolios, brand guidelines:
+**C. The *why* behind the feeling.** Name the emotional signal the brand is trying to send. Examples:
+- Patagonia's understated documentary = "we're too serious to perform"
+- Aesop's stark product isolation = "our product is the statement"
+- Kinfolk's soft golden-hour interiors = "life is slower than you think"
+- Off-White's high-contrast industrial = "design as a system, not decoration"
+
+**D. Style principles (3–5 bullets).** Compress A/B/C into reusable rules you'll feed to the prompt formula:
+- e.g. "Always golden hour, never noon. Always one human, small in frame. Always film grain, never pristine. Always warm cream tones, never pure white."
+
+These principles become the *persistent style preamble* for every image prompt in Phase 4.
+
+### Step 3: Optional wider research (parallel via Explore)
+
+If the homepage didn't give you enough, spawn an `Explore` subagent for external context:
+
 ```
 Agent({
   subagent_type: "Explore",
-  description: "Research [brand] design assets",
-  prompt: "Search for [brand] brand guidelines, logo SVG, design case studies on Behance/Dribbble, published visual identity documentation.",
+  description: "Research [brand] visual identity",
+  prompt: "Research the visual identity of [brand]. Find: design case studies, Behance/Dribbble portfolios, interviews with their design team, logo SVG sources. Summarise typography, colors, photography style, and brand personality in 3-5 bullet points each.",
   run_in_background: true
 })
 ```
 
-### Step 4: Synthesize + download assets
+`Explore` is built into Claude Code — no plugin needed.
 
-When research completes, consolidate:
-- **Fonts** — exact families, weights, roles
-- **Colors** — primary, secondary, accent (hex)
-- **Photography style** — from Instagram + research
-- **Brand personality** — 3–5 adjectives
-- **Logo** — download SVG/PNG from the website
+### Step 4: Optional Instagram grid check
 
-### Step 5: Lock the design language
+If the brand has a public Instagram URL, `WebFetch` the profile page to see the grid aesthetic. Many profiles block public fetch — if it 403s, skip and rely on Steps 1–3. Don't block the flow.
 
-Present a summary table:
+### Optional: enhanced browsing (if the user has the tools)
+
+`WebFetch` works for 80% of brands, but occasionally you need live JS-rendered content (React / Vue / Next.js apps that only reveal fonts + colors after hydration). If the user has any of these installed, use them instead of `WebFetch`:
+
+| Tool | What it adds | Install |
+|------|-------------|---------|
+| **[Claude for Chrome](https://claude.ai/chrome)** | Live browser automation — clicks, scrolls, inspects rendered DOM, takes screenshots | Browser extension from Anthropic |
+| **[surf-cli](https://github.com/davidteather/surf)** | Headless browsing with JS execution from the CLI | `npm install -g surf-cli` |
+| **Playwright MCP** | Programmatic browser via MCP | `npm install -g @modelcontextprotocol/server-playwright` |
+
+If none of these are installed, fall back to `WebFetch` + `curl` on the CSS bundle directly. That's usually enough — most brand websites serve static HTML + fonts + colors on initial load.
+
+### Step 5: Synthesize + present
+
+Consolidate everything into a summary table:
 
 | Element | Value |
 |---------|-------|
@@ -150,10 +188,22 @@ Present a summary table:
 | Body font | [extracted] |
 | Accent font | [if any] |
 | Primary colors | [hex values] |
-| Photography style | [description] |
-| Brand personality | [adjectives] |
+| Photography signature | [from Step 2A] |
+| Implied gear | [from Step 2B] |
+| Brand *why* | [from Step 2C] |
+| Style principles | [3–5 bullets from Step 2D] |
+| Brand personality | [3–5 adjectives] |
 
-Then ask the brand personality question (4 options derived from the extracted DNA — NOT a fixed lookup table). Lock the creative brief.
+### Step 6: Creative direction
+
+Based on this DNA, generate **4 creative direction options** specific to THIS brand (NOT a fixed category lookup):
+
+- **A)** Most faithful to existing brand identity
+- **B)** Fresh interpretation that amplifies what's there
+- **C)** Contrasting direction that challenges expectations
+- **D)** Hybrid mixing brand DNA with a different aesthetic
+
+User picks one. Lock the creative brief.
 
 ---
 
@@ -236,7 +286,9 @@ Split into themed chapters with 6 images each. Each chapter gets its own landing
 
 ---
 
-## Phase 4: Prompt formula (7 Pillars)
+## Phase 4: The prompt formula
+
+Every image prompt follows the same eight-part skeleton. No two shots in a shoot should share the same mood opener, camera body, lens, lighting temperature, and imperfection set.
 
 ```
 [MOOD] atmosphere,
@@ -293,24 +345,27 @@ For character-referenced shots, prefix:
 
 ```bash
 # Still (product)
-uv run scripts/generate_image.py \
+uv run [krea-plugin-path]/scripts/generate_image.py \
   --prompt "..." --filename "01-hero.png" \
   --model nano-banana-pro --width 1280 --height 1024
 
 # Still with character reference
-uv run scripts/generate_image.py \
+uv run [krea-plugin-path]/scripts/generate_image.py \
   --prompt "This exact person from the reference image..." \
   --image-url "reference/character-sheet.png" \
   --filename "05-chef-plating.png" \
   --model nano-banana-flash --width 1024 --height 1280
 
 # Video
-uv run scripts/generate_video.py \
+uv run [krea-plugin-path]/scripts/generate_video.py \
   --prompt "..." --filename "07-hero.mp4" \
   --model kling-2.5 --duration 5 --aspect-ratio 16:9
 ```
 
-Resolve the Krea script path at invocation — it may live at `~/.claude/skills/krea-ai/scripts/` or `~/.claude/plugins/*/krea-ai/scripts/` depending on how the user installed the krea-ai plugin.
+Resolve `[krea-plugin-path]` at invocation. Common locations:
+- `~/.claude/plugins/cache/*/krea-ai/*/scripts/`
+- `~/.claude/skills/krea-ai/scripts/`
+- Wherever the user's Krea plugin install placed them — `find ~/.claude -name "generate_image.py" | head -1` finds it.
 
 ---
 
@@ -337,9 +392,9 @@ Common layout approaches (inspiration, not templates):
 - Immersive full-bleed — every section fills the viewport, minimal text
 - Split-screen — image/text dialogue
 
-### Step 2: Build with `/frontend-design` + `/high-end-visual-design`
+### Step 2: Build with `/frontend-design`
 
-Pass the brand DNA as context, not rigid constraints. Let the design skills interpret.
+Pass the brand DNA as context, not rigid constraints. Let `/frontend-design` interpret.
 
 **Brief template:**
 
@@ -353,34 +408,46 @@ BRAND DNA (extracted from [domain]):
 - Website structure: [observed pattern — single-column / editorial / product-first / etc.]
 - Personality: [3–5 adjectives]
 
-CREATIVE DIRECTION: [chosen from Phase 1 — e.g. "Documentary Editorial — push their 
+CREATIVE DIRECTION: [chosen from Phase 1 — e.g. "Documentary Editorial — push their
 understated documentary style further toward magazine editorial"]
 
-The page should feel like [Brand] designed it, but for a premium editorial feature — 
+The page should feel like [Brand] designed it, but for a premium editorial feature —
 not their standard catalog page.
 
 Images at: [paths]. Videos at: [paths].
 Save to [output path]/index.html
 ```
 
-Then run `/high-end-visual-design` over the output to enforce expensive-feel details: fluid spacing, exponential easing, proper kerning, metric-matched font fallbacks, no pure black/white, focus-visible states.
+**Optional:** if `/high-end-visual-design` is installed, run it over the output to add expensive-feel details (fluid spacing, exponential easing, proper kerning, metric-matched fallbacks, no pure black/white). If not installed, `/polish` covers most of the same concerns.
 
-**Principle:** describe the brand, don't dictate the CSS. The design skills make intelligent decisions FROM brand context.
+**Principle:** describe the brand, don't dictate the CSS. Let the design skill make intelligent decisions FROM brand context.
 
-### Step 3: Refine with impeccable skills
+### Step 3: Critique-first quality loop
 
-After the base page is built, run in this order:
+**Don't run every polish skill by default** — it's slow and usually overkill for a pitch. Let `/critique` tell you what's actually broken, then fix only what matters.
 
-1. **`/typeset`** — Type scale consistent, hierarchy clear, line lengths 45–75ch, no text <12px, font-display + fallbacks.
-2. **`/polish`** — Alignment, spacing, interaction states, lazy loading, aria labels, reduced motion, video poster frames.
-3. **`/critique`** — AI-slop check, visual hierarchy, persona red flags, priority fixes. Score should be ≥30/40.
+**Default loop (fast — 1 subagent pass):**
 
-**Optional power-ups based on `/critique` findings:**
-- `/bolder` — too safe or generic
-- `/animate` — needs purposeful motion
-- `/adapt` — mobile layout needs work
-- `/colorize` — palette feels off
-- `/distill` — too cluttered
+1. **`/critique`** — AI-slop detection, visual hierarchy check, persona red flags, scored out of 40. Identifies the specific issues worth fixing.
+2. **Read the critique output.** If the score is ≥30/40 and there are no Critical issues — **ship it**. Stop.
+3. **If `/critique` flags specific issues**, run ONLY the matching targeted fix:
+
+| Critique flag | Targeted fix |
+|---------------|--------------|
+| Typography hierarchy muddy, line length off, scale inconsistent | `/typeset` |
+| Alignment / spacing / a11y / interaction states weak | `/polish` |
+| Feels safe, generic, template-like | `/bolder` |
+| Mobile layout feels squeezed, not adapted | `/adapt` |
+| Static, no motion, dead | `/animate` |
+| Palette feels off, monochromatic, dull | `/colorize` |
+| Cluttered, too much happening | `/distill` |
+| Too loud, overstimulating | `/quieter` |
+
+**Full polish loop (slower — run all passes):**
+
+Only when producing a production-grade deliverable for a paying client. Opt-in via `--full-polish` flag or when the user explicitly asks. Order: `/typeset` → `/polish` → `/critique`. Adds ~3–5 minutes.
+
+**Pragmatic default:** `/frontend-design` + `/critique` + one or two targeted fixes based on critique findings. Ships in ~2 minutes of post-generation work instead of 5+.
 
 ### Step 4: Serve + verify
 
@@ -411,7 +478,7 @@ Open http://localhost:8888 and verify:
 11. CTA — price/booking + button with focus-visible state
 12. Footer — "Shot entirely with AI — [tools used]" + back-to-top
 
-### Must-haves (enforced by `/high-end-visual-design` + `/polish`)
+### Must-haves (enforced by `/polish` + optionally `/high-end-visual-design`)
 
 - Fluid spacing with `clamp()` — breathes on larger screens
 - Exponential easing (`ease-out-expo`) — not generic `ease`
@@ -490,3 +557,4 @@ Default save location: `./[brand-slug]/` in the current working directory. Users
 - This skill does NOT host the landing page — it serves locally. Deploy separately (Vercel, Netlify, etc.).
 - This skill does NOT bundle its own image-gen — it requires the Krea.ai plugin.
 - This skill does NOT replace `/frontend-design` or `/critique` — it orchestrates them.
+- This skill does NOT require any custom MCP server or personal agent. Everything runs on tools available to every Claude Code install plus the three listed dependency plugins.

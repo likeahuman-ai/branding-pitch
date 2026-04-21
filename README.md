@@ -38,14 +38,21 @@ You point `/brand-pitch` at a brand. It returns a served landing page in 5–15 
 
 ## Requires
 
-This skill composes two existing plugins. **Both must be installed** for the end-to-end flow:
+This skill composes **three existing plugins**. All three must be installed for the end-to-end flow:
 
 | Plugin | Used for | Install |
 |--------|----------|---------|
-| **Krea.ai** (or compatible image-gen) | AI image + video generation | Requires `KREA_API_TOKEN` env var and `uv` installed. See [Krea.ai docs](https://krea.ai). |
-| **[impeccable](https://github.com/pbakaus/impeccable)** | `/frontend-design`, `/high-end-visual-design`, `/typeset`, `/polish`, `/critique` | `/plugin install pbakaus/impeccable` |
+| **Krea.ai** (image + video generation) | AI stills + videos (`nano-banana-pro`, `nano-banana-flash`, `kling-2.5`) | Requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
+| **frontend-design** (Anthropic official) | `/frontend-design` — builds the landing page from the brand's DNA | `/plugin marketplace add anthropics/claude-plugins-official` → `/plugin install frontend-design` |
+| **[impeccable](https://github.com/pbakaus/impeccable)** | `/typeset`, `/polish`, `/critique`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill` — the quality loop | `/plugin marketplace add pbakaus/impeccable` → `/plugin install impeccable` |
 
-Without these, `brand-pitch` will fail at generation (Phase 5) or landing-page build (Phase 6) with a clear message pointing at the missing dependency.
+**Optional enhancement:**
+- `/high-end-visual-design` — if you have it, run it after `/frontend-design` for extra agency-feel details. If not, `/polish` covers most of the same concerns.
+
+Without the three required plugins, `brand-pitch` surfaces a clear error pointing at the missing dependency — it does NOT silently fall back to degraded output.
+
+**Tools used (available to every Claude Code install by default):**
+- `WebFetch` · `WebSearch` · `Explore` subagent · `Bash` — no custom MCP servers, no personal agents required.
 
 ---
 

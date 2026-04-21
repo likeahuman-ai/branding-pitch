@@ -1,7 +1,7 @@
 {
   "name": "branding-pitch",
-  "description": "Pitch a brand end-to-end — analyze its visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page, served locally. Composes Krea.ai image/video generation with the impeccable frontend-design, high-end-visual-design, typeset, polish, and critique skills. For agencies, freelancers, and founders presenting brand concepts.",
-  "version": "1.0.0",
+  "description": "Pitch a brand end-to-end — analyze its visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page, served locally. Composes Krea.ai image/video generation with Anthropic's frontend-design plugin and the impeccable typeset/polish/critique skills. For agencies, freelancers, and founders presenting brand concepts.",
+  "version": "1.0.1",
   "author": {
     "name": "LikeAHuman.ai",
     "email": "academy@likeahuman.ai",
@@ -17,6 +17,7 @@
     "ai-photography",
     "krea-ai",
     "impeccable",
+    "frontend-design",
     "creative-director",
     "visual-dna",
     "agency",
