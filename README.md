@@ -1,6 +1,6 @@
 # branding-pitch
 
-> A Claude Code plugin that takes a brand — name, URL, Instagram, rough concept — and produces a complete pitch package: visual DNA extraction, AI photography + video campaign (~6 images + 2 videos), polished editorial landing page, served locally. In one flow.
+> A Claude Code plugin that takes a brand — name, URL, Instagram, or rough concept — and produces a complete pitch package: visual DNA extraction, AI photography + video campaign (~6 images + 2 videos), polished editorial landing page, served locally. In one flow.
 
 **Built by [LikeAHuman.ai](https://likeahuman.ai).**
 
@@ -8,14 +8,51 @@
 
 ## What it does
 
-You point `/brand-pitch` at a brand. It returns a served landing page in 5–15 minutes.
+You point `/brand-pitch` at a brand. You get a served landing page in 5–15 minutes.
 
-1. **Extracts the brand's visual DNA** — fonts, colors, photography style, personality (from the brand's own website + research)
-2. **Plans a photography campaign** — ~6 stills + 2 videos, category-appropriate (products get flat lays, food gets macros, service shoots get character references)
-3. **Generates everything with Krea.ai** — `nano-banana-pro` for stills, `nano-banana-flash` for faces, `kling-2.5` for video, all in parallel
-4. **Builds the landing page with `/frontend-design` + `/high-end-visual-design`** — the brand's actual fonts + colors drive every decision, so the page feels like the brand's in-house team made it
-5. **Runs the impeccable polish loop** — `/typeset` → `/polish` → `/critique` — AI-slop checks, typography pass, accessibility, reduced motion, focus states
-6. **Serves it locally** at `http://localhost:8888` — ready to show the client
+1. **Extracts the brand's visual DNA** — fonts, colors, photography signature, implied technical choices, and the emotional *why* behind the brand — all from the brand's own website + optional deeper web research
+2. **Plans a photography campaign** — ~6 stills + 2 videos, category-appropriate (products get hero/three-quarter/macro/flat-lay/environment/lifestyle; food gets spreads/macros/ingredients/environment; service shoots use a character sheet)
+3. **Generates everything with Krea.ai** in parallel — `nano-banana-pro` for stills, `nano-banana-flash` for locked characters, `kling-2.5` or `seedance` for video
+4. **Keeps visual consistency via reference images** — product locked across shots, character locked across shots+videos, and the **still-first → animate** pattern ensures product videos match the product stills exactly
+5. **Builds the landing page with `/frontend-design`** — the brand's actual fonts + colors drive every decision, so the page feels like the brand's in-house team made it
+6. **Runs a critique-first quality loop** — `/critique` first, then targeted fix only if it flags issues (`/polish`, `/typeset`, `/animate`, etc.) — no wasted time running every polish skill by default
+7. **Serves it locally** at `http://localhost:8888` — ready to show the client
+
+---
+
+## Why this over DIY prompting
+
+Three patterns make this plugin genuinely different from "prompt Krea yourself":
+
+### 1. The visual-DNA phase actually understands the brand
+
+Most AI branding tools grab a hex color and a Google Font, call it "extracted brand", and move on. `brand-pitch` goes further:
+
+- **Photographic signature** — lighting choice, color grading, composition, subject scale, texture treatment
+- **Implied technical choices** — what camera/lens/aperture would a real photographer use to shoot this brand? (Patagonia → Leica Q3 28mm f/2.8. Aesop → Hasselblad X2D 80mm f/4.)
+- **The *why*** — the emotional signal the brand is trying to send ("we're too serious to perform", "our product is the statement")
+- **Style principles** — 3–5 reusable rules that get fed into every image prompt
+
+This happens inline — no external "visual-DNA-analyst" agent needed.
+
+### 2. Reference images are used strategically, not universally
+
+The skill has an explicit decision tree for when `--image-url` helps vs hurts:
+
+- **Product across 8 shots** → use product reference on each (consistency)
+- **Detail macro / flat lay** → no reference (composition needs freedom)
+- **Character across campaign** → mandatory character-sheet reference
+- **Brand mood lock** → NEVER use `--image-url` (it drags the whole composition, kills variety)
+
+### 3. Video uses the still-first → animate pattern
+
+The trick most people miss: if you want a video with a specific product or character, **text-to-video alone generates a similar-but-wrong version every time**. The skill:
+
+1. Generates the hero still FIRST with `--image-url` locked to the actual product
+2. Feeds THAT generated still as the **starting frame** to Kling/Seedance
+3. Video animates from the exact frame — zero product drift
+
+Plus: smart routing between video engines — **Kling** for realistic physics + camera push-ins, **Seedance** for fluid motion (liquid, fabric, dance, rotation), **Hailuo** as rate-limit fallback.
 
 ---
 
@@ -42,17 +79,19 @@ This skill composes **three existing plugins**. All three must be installed for 
 
 | Plugin | Used for | Install |
 |--------|----------|---------|
-| **Krea.ai** (image + video generation) | AI stills + videos (`nano-banana-pro`, `nano-banana-flash`, `kling-2.5`) | Requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
+| **Krea.ai** (image + video generation) | AI stills + videos (`nano-banana-pro`, `nano-banana-flash`, `kling-2.5`, `seedance`, `hailuo-2.3`) | Requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
 | **frontend-design** (Anthropic official) | `/frontend-design` — builds the landing page from the brand's DNA | `/plugin marketplace add anthropics/claude-plugins-official` → `/plugin install frontend-design` |
-| **[impeccable](https://github.com/pbakaus/impeccable)** | `/typeset`, `/polish`, `/critique`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill` — the quality loop | `/plugin marketplace add pbakaus/impeccable` → `/plugin install impeccable` |
+| **[impeccable](https://github.com/pbakaus/impeccable)** (pbakaus) | `/critique`, `/polish`, `/typeset`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill`, `/quieter` — the targeted-fix toolkit | `/plugin marketplace add pbakaus/impeccable` → `/plugin install impeccable` |
 
-**Optional enhancement:**
-- `/high-end-visual-design` — if you have it, run it after `/frontend-design` for extra agency-feel details. If not, `/polish` covers most of the same concerns.
+**Optional:**
+- `/high-end-visual-design` — if you have it, run after `/frontend-design` for extra agency-feel details. If not, `/polish` covers most of the same ground.
 
-Without the three required plugins, `brand-pitch` surfaces a clear error pointing at the missing dependency — it does NOT silently fall back to degraded output.
+Without the three required plugins, `brand-pitch` surfaces a clear error pointing at the missing dep — it does NOT silently degrade.
 
 **Tools used (available to every Claude Code install by default):**
-- `WebFetch` · `WebSearch` · `Explore` subagent · `Bash` — no custom MCP servers, no personal agents required.
+`WebFetch` · `WebSearch` · `Explore` subagent · `Bash`. No custom MCP servers or personal agents required.
+
+**Optional browsing upgrades for JS-heavy brand sites:** Claude for Chrome, `surf-cli`, or Playwright MCP. See the [skill docs](./skills/brand-pitch/SKILL.md#optional-enhanced-browsing-if-the-user-has-the-tools) for details. `WebFetch` covers ~80% of brands on its own.
 
 ---
 
@@ -70,17 +109,24 @@ Interactive flow:
 3. Pick brand personality direction from 4 options derived from the brand's DNA
 4. Grab a coffee while Claude generates 6 stills + 2 videos in parallel
 5. Landing page builds in the background using the first assets that land
-6. `/typeset` → `/polish` → `/critique` for final quality
-7. Served at `http://localhost:8888`
+6. `/critique` runs → targeted fix if needed → served at `http://localhost:8888`
 
 ### Quick mode (~5–6 min)
 
 ```bash
 /brand-pitch --quick
-# or just say "quick", "fast", "demo mode"
+# or say "quick", "fast", "demo mode"
 ```
 
-Single WebFetch for brand research · 4 stills + 1 video · 8-section page · skips the polish loop. Perfect for live demos and time-boxed client calls.
+Single WebFetch for brand research · 4 stills + 1 video · 8-section page · skips the critique loop. For live demos and time-boxed client calls.
+
+### Full polish loop (opt-in — adds ~3–5 min)
+
+```bash
+/brand-pitch --full-polish
+```
+
+Runs `/typeset` → `/polish` → `/critique` after the page builds, instead of the default critique-first loop. Use for production-grade client deliverables.
 
 ### One-shot with brief
 
@@ -90,60 +136,34 @@ Single WebFetch for brand research · 4 stills + 1 video · 8-section page · sk
 
 ---
 
-## How it works
+## Pipeline
 
 ```
-Brand Research → Visual DNA → Design Language → Shot Plan →
-Parallel Image Gen (~6) → Videos in Background (~2) →
-/frontend-design + /high-end-visual-design (build page) →
-/typeset → /polish → /critique → Serve locally
+Brand Research (WebFetch + inline visual DNA) → Design Language → Shot Plan →
+Reference Strategy → Parallel Image Gen → Videos (still-first → animate) →
+/frontend-design (build page) → /critique → targeted fix if needed → Serve
 ```
 
-### Phase 0 — Brand research
+### The 7 phases
 
-- Browse the brand's website (WebFetch or Chrome automation)
-- Extract fonts from `document.fonts`, colors from CSS bundle
-- Optional: spawn `visual-dna-analyst` agent + `Explore` agent in parallel for deeper research (Behance, Dribbble, brand guidelines)
-- Download logo SVG/PNG
+| Phase | What happens |
+|-------|--------------|
+| **0. Brand research + visual DNA** | WebFetch homepage, extract typography + palette, deconstruct photographic signature (lighting · grading · composition · scale · texture), identify implied camera/lens/aperture, name the brand's *why*, compress into 3–5 style principles. Optional `Explore` subagent for wider context. |
+| **1. Creative brief** | 2 questions max — what are we shooting, which of 4 brand-personality directions (A faithful / B amplified / C contrarian / D hybrid) |
+| **2. Character sheet** | Only if people are in the shoot. Composite 4 reference photos → 2×2 grid → `nano-banana-flash` character sheet. Used as `--image-url` for every shot featuring that person. |
+| **3. Shot planning** | Category-appropriate template (product / food / service / extended campaign). Default 6 stills + 2 videos, AI adjusts per category. |
+| **4. Prompt formula** | Eight-part skeleton: mood · subject · placement · camera · lighting · texture · imperfections · anti-AI. Every shot varies mood, camera, lighting temp, and imperfection set — no two identical. |
+| **4B. Reference strategy** | Decide per shot: does this need `--image-url`? (hero product yes, detail macro no, character always, brand mood never). Videos use the **still-first → animate** pattern for product consistency. |
+| **5. Generation** | Parallel Krea calls. Stills via `nano-banana-pro` (default) or `nano-banana-flash` (character). Videos via `kling-2.5` (physics), `seedance` (fluid motion), or `hailuo-2.3` (fallback). |
+| **6. Landing page** | `/frontend-design` with brand DNA as context. Then `/critique` → targeted fix. Served at localhost. |
 
-### Phase 1 — Creative brief (2 questions max)
+### Video engine routing at a glance
 
-- What are we shooting? (product, food, space, service, tech)
-- Brand personality direction (4 options derived from the extracted DNA — NOT a fixed lookup)
-
-### Phase 2 — Character sheet (if people)
-
-Composite 4 reference photos into a 2×2 grid, generate a character sheet with `nano-banana-flash`, use it as `--image-url` for every shot featuring that person.
-
-### Phase 3 — Shot planning
-
-Category-appropriate: physical products get hero/three-quarter/macro/flat-lay/environment/lifestyle. Food gets hero spread + star dish + texture + ingredients + environment + person. Service shoots lean on the character sheet for the human shots.
-
-### Phase 4 — 7-Pillars prompt formula
-
-```
-[MOOD] atmosphere,
-[SUBJECT],
-[PLACEMENT] on/in [SURFACE/SETTING],
-[CAMERA: body + lens + aperture],
-[LIGHTING: color temp K + direction + modifier],
-[TEXTURE DETAILS],
-[STRATEGIC IMPERFECTIONS: film grain, dust, condensation, wear],
-[ANTI-AI: NOT CGI, NOT retouched, natural imperfections]
-```
-
-Each prompt varies mood opener, camera body, lens, lighting, and strategic imperfections. No two shots in a shoot should share the same stack.
-
-### Phase 5 — Generation
-
-All stills dispatched in parallel, videos run in background via `run_in_background: true`. Default models: `nano-banana-pro` (stills), `nano-banana-flash` (character), `kling-2.5` (video).
-
-### Phase 6 — Landing page
-
-- `/frontend-design` with brand DNA as context (fonts, colors, photography style, personality, chosen direction)
-- `/high-end-visual-design` for expensive-feel details (fluid spacing, exponential easing, metric-matched font fallbacks, no pure black/white)
-- `/typeset` → `/polish` → `/critique` for typography, polish, and AI-slop detection
-- Optional: `/bolder`, `/animate`, `/adapt`, `/colorize`, `/distill` based on critique findings
+| Need | Engine | Why |
+|------|--------|-----|
+| Realistic physics, camera push-ins, human action | `kling-2.5` | Default. Best physics. |
+| Fluid motion — liquid pouring, fabric flow, dance, smooth rotation | `seedance` | Smoother continuous motion than Kling |
+| Rate-limit fallback | `hailuo-2.3` | When Kling returns 402 |
 
 ---
 
@@ -163,7 +183,7 @@ All stills dispatched in parallel, videos run in background via `run_in_backgrou
     └── video/             (07–08+)
 ```
 
-Default save location is `./[brand-slug]/` in the current working directory. Override with `--out`.
+Default save location: `./[brand-slug]/` in the current working directory. Override with `--out`.
 
 ---
 
@@ -171,25 +191,30 @@ Default save location is `./[brand-slug]/` in the current working directory. Ove
 
 | Asset | Model | CU each |
 |-------|-------|---------|
-| Product still | `nano-banana-pro` | 119 |
-| Character still | `nano-banana-flash` | 48 |
-| Video 5s | `kling-2.5` | 282 |
+| Product / location still | `nano-banana-pro` | 119 |
+| Character still (with face ref) | `nano-banana-flash` | 48 |
+| Character sheet (2×2 composite) | `nano-banana-flash` | 48 |
+| Video 5s — physics / push-in | `kling-2.5` | 282 |
+| Video 5s — fluid motion | `seedance` | varies |
+| Video 5s — fallback | `hailuo-2.3` | 180 |
 | **Standard pitch** (6 stills + 2 videos) | | **~1,280 CU** |
 | **Extended campaign** (32 stills + 4 videos) | | **~5,000 CU** |
 
-See Krea.ai pricing for current USD-per-CU rates.
+See [krea.ai pricing](https://krea.ai) for current USD-per-CU rates.
 
 ---
 
 ## Philosophy
 
-> "The landing page should feel like the brand's in-house team designed it, not like a template got filled in."
+> "The landing page should feel like the brand's in-house team designed it, not like a template got filled in. The photography should look like 6 editorial moments, not 6 variants of the same hero. The videos should match the stills exactly, not similar-but-wrong."
 
-Most AI landing-page generators output the same product-page-with-a-hero-and-three-feature-cards. That's because they reach for archetype templates instead of doing the brand research first.
+Most AI branding tools skip the hard parts:
+- They extract a color and a font and call it "brand analysis" — they don't deconstruct the *why*
+- They run text-to-video with no reference — products drift every time
+- They run every polish skill by default — it's slow, usually overkill
+- They use a fixed template — every output looks the same
 
-`brand-pitch` does the opposite: spend the first 2 minutes deeply understanding the brand's real fonts, colors, photography, and personality — then let `/frontend-design` make *authentic* decisions from that context. A Patagonia page naturally looks nothing like an Aesop page because the brands ARE nothing alike.
-
-Same logic for the photography: the 7-Pillars formula forces varied mood openers, camera bodies, lighting temperatures, and strategic imperfections — so a 6-image shoot looks like 6 different editorial moments, not 6 variants of the same hero.
+`brand-pitch` does the opposite on each: inline visual-DNA deconstruction, strategic reference-image use, still-first → animate video pattern, critique-first lean polish loop, and authentic brand-driven layouts from `/frontend-design`.
 
 ---
 
@@ -198,9 +223,9 @@ Same logic for the photography: the 7-Pillars formula forces varied mood openers
 Issues and PRs welcome at [github.com/likeahuman-ai/branding-pitch](https://github.com/likeahuman-ai/branding-pitch).
 
 Particularly interested in:
-- New category shot plans (fashion collections, architecture, interior design, beauty)
-- Alternative image-gen backend support (so you can swap Krea for another provider)
-- Multi-language support for brand research (currently assumes English/Dutch content)
+- New category shot plans (fashion collections, architecture, interior design, beauty, real estate)
+- Alternative image-gen backend support (swap Krea for another provider)
+- Multi-language brand research (currently English/Dutch friendly)
 - Deploy-to-Vercel auto-publish after the pitch is built
 
 ---
@@ -209,8 +234,11 @@ Particularly interested in:
 
 [MIT](./LICENSE) — use freely in client work, personal projects, or agency presentations.
 
+---
+
 ## Related plugins
 
-- [font-hunt](https://github.com/likeahuman-ai/font-hunt) — for when you want to steer the brand AWAY from its default fonts (or help a new brand pick)
-- [coding-standards](https://github.com/likeahuman-ai/coding-standards) — to enforce code quality on the generated landing page
-- [impeccable](https://github.com/pbakaus/impeccable) — the design skill suite this plugin composes
+- **[font-hunt](https://github.com/likeahuman-ai/font-hunt)** — when you want to steer a brand AWAY from its default fonts (or help a new brand pick)
+- **[coding-standards](https://github.com/likeahuman-ai/coding-standards)** — to enforce code quality on the generated landing page
+- **[impeccable](https://github.com/pbakaus/impeccable)** — the design skill suite this plugin composes
+- **[frontend-design](https://github.com/anthropics/claude-plugins-official)** — Anthropic's official landing-page skill
