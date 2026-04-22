@@ -1,7 +1,7 @@
 {
   "name": "branding-pitch",
-  "description": "Pitch a brand end-to-end — analyze its visual DNA, generate an AI photography + video campaign (~6 images + 2 videos) with proper reference-image + still-first-then-animate consistency patterns, build a polished editorial landing page, served locally. Slash command is /pitch. Knows the full 7-script Krea.ai toolkit (generate_image, generate_video, enhance_image, train_style, list_models, pipeline, get_job) and runs list_models.py for live model discovery. Composes Krea.ai with Anthropic's frontend-design plugin and the impeccable typeset/polish/critique skills. Complements claude.ai/design for users who want the full pipeline over visual editing.",
   "version": "1.3.0",
+  "description": "Pitch a brand end-to-end — visual DNA extraction, AI photography + video campaign, polished editorial landing page. Fully self-contained.",
   "author": {
     "name": "LikeAHuman.ai",
     "email": "academy@likeahuman.ai",
@@ -10,26 +10,5 @@
   "homepage": "https://github.com/likeahuman-ai/branding-pitch",
   "repository": "https://github.com/likeahuman-ai/branding-pitch",
   "license": "MIT",
-  "keywords": [
-    "branding",
-    "brand-pitch",
-    "pitch",
-    "landing-page",
-    "ai-photography",
-    "krea-ai",
-    "kling",
-    "seedance",
-    "wan",
-    "veo",
-    "topaz",
-    "lora",
-    "impeccable",
-    "frontend-design",
-    "creative-director",
-    "visual-dna",
-    "claude-design",
-    "agency",
-    "freelancer"
-  ],
   "skills": "./skills/"
 }

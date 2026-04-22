@@ -1,7 +1,14 @@
 ---
 name: pitch
-description: Pitch a brand end-to-end — analyze the brand's visual DNA, generate an AI photography + video campaign (~6 images + 2 videos), build a polished editorial landing page served locally. For agencies, freelancers, or founders presenting a brand or product concept.
-when_to_use: When the user says "pitch", "pitch this brand", "brand pitch", "build a brand page", "analyze and pitch", "make a landing page for [brand]", "branding pitch", "do a full brand build", "creative director for", "turn this brand into a page", "generate brand assets + landing page". Also a strong alternative to claude.ai/design when the user wants the full AI-photography-plus-page pipeline rather than visual editing, or when a Claude Design handoff bundle arrives without photography and needs a full shoot + implementation.
+description: >
+  Pitch a brand end-to-end — analyze the brand's visual DNA, generate an AI
+  photography + video campaign (~6 images + 2 videos), build a polished editorial
+  landing page served locally. For agencies, freelancers, or founders presenting
+  a brand or product concept. Use when the user says "pitch", "pitch this brand",
+  "brand pitch", "build a brand page", "analyze and pitch", "make a landing page
+  for [brand]", "creative director for", "turn this brand into a page", or
+  "generate brand assets + landing page". Requires uv (Python runner) and a
+  KREA_API_TOKEN environment variable.
 argument-hint: "[brand name or URL]"
 user-invocable: true
 ---
@@ -17,28 +24,13 @@ Take a brand (name, URL, Instagram, or rough concept) and produce a complete pit
 
 ---
 
-## Required companion plugins
+## Prerequisites
 
-This skill composes three existing tools. **All three must be installed** for `/pitch` to run end-to-end:
+Before starting, the skill runs `scripts/preflight.sh` to verify:
+- **uv** — Python script runner (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- **KREA_API_TOKEN** — get one from https://krea.ai/settings/api
 
-| Plugin | Used for | Install |
-|--------|---------|---------|
-| **Krea.ai skills** (image + video generation) | AI stills (`nano-banana-pro`, `nano-banana-flash`) and videos (`kling-2.5`, `seedance`, `hailuo-2.3`) | Install: `npx skills add krea-ai/skills`. Also requires `KREA_API_TOKEN` env var and `uv` installed. See [krea.ai docs](https://krea.ai). |
-| **frontend-design** (Anthropic official) | `/frontend-design` — builds the landing page from the brand's DNA | `/plugin marketplace add anthropics/claude-plugins-official` then `/plugin install frontend-design` |
-| **[impeccable](https://github.com/pbakaus/impeccable)** | `/typeset`, `/polish`, `/critique`, `/animate`, `/bolder`, `/adapt`, `/colorize`, `/distill` — the quality loop | `/plugin marketplace add pbakaus/impeccable` then `/plugin install impeccable` |
-
-**Optional enhancement:**
-- `/high-end-visual-design` — if installed, run it after `/frontend-design` for extra agency-feel details. If not installed, `/polish` covers most of the same concerns.
-
-If any required plugin is missing, `/pitch` surfaces a clear error pointing at the dependency — it does NOT silently fall back to degraded output.
-
-**Tools used (available to every Claude Code install by default):**
-- `WebFetch` — for brand homepage research
-- `WebSearch` — for deeper brand research (case studies, logo sources)
-- `Explore` subagent — for multi-site research in parallel
-- `Bash` — for `uv run` image generation, local HTTP server
-
-No custom MCP servers, no personal agents required.
+No other plugins are required. All design guidance and generation scripts are bundled.
 
 ---
 
@@ -56,7 +48,7 @@ No custom MCP servers, no personal agents required.
 | Direction question | 4 options (A/B/C/D) | **1 recommended direction** derived from the CSS, one-line confirm |
 | Shot count | 6 stills + 2 videos | **4 stills + 1 video** (hero, detail, lifestyle, macro + 1 rotation video) |
 | Landing page sections | 10–12 | **8** — hero · intro · logic I · logic II · magic · video · spec · CTA |
-| Polish loop | `/typeset` → `/polish` → `/critique` | **Skip.** `/frontend-design` output is the deliverable |
+| Polish loop | Quality check against design guidelines | **Skip.** First build output is the deliverable |
 | WORKFLOW.md | Full reproducibility | **Skip** |
 
 **Quick mode flow:**
@@ -69,7 +61,7 @@ No custom MCP servers, no personal agents required.
 5. Dispatch all 5 generations in parallel:
    ```bash
    mkdir -p logs images video
-   uv run [path-to-krea-plugin]/scripts/generate_image.py \
+   uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_image.py \
      --prompt "$(cat prompts/01-hero.txt)" \
      --filename "images/01-hero.png" \
      --model nano-banana-pro --width 1280 --height 1024 \
@@ -77,8 +69,7 @@ No custom MCP servers, no personal agents required.
    # ... 3 more stills + 1 video in background ...
    wait
    ```
-   The `[path-to-krea-plugin]` depends on where the Krea.ai plugin is installed. Check `~/.claude/plugins/` or `~/.claude/skills/` for the actual location.
-6. **While gens run**, draft the 8-section `index.html` using `/frontend-design` with brand tokens hardcoded from the WebFetch result
+6. **While gens run**, draft the 8-section `index.html` using the bundled design guidelines with brand tokens hardcoded from the WebFetch result
 7. When gens land: `ls images/` to verify, start `python3 -m http.server 8888`, hand over the URL
 8. Done. No WORKFLOW.md, no polish loop.
 
@@ -95,10 +86,10 @@ No custom MCP servers, no personal agents required.
 ```
 Brand Research (WebFetch + inline visual DNA) → Design Language → Shot Plan →
 Parallel Image Gen → Videos in Background →
-/frontend-design (build page) → /critique → targeted fix if needed → Serve
+Build page (design guidelines) → Quality check → Serve
 ```
 
-(Full `/typeset` → `/polish` → `/critique` loop is opt-in via `--full-polish` — saves ~3–5 minutes by default.)
+(Full quality check loop is opt-in via `--full-polish` — saves ~3–5 minutes by default.)
 
 ### Default target output
 
@@ -109,6 +100,14 @@ Parallel Image Gen → Videos in Background →
 ---
 
 ## Phase 0: Brand research + visual DNA
+
+**Step 0: Preflight check**
+
+Run the preflight script to verify environment requirements:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/preflight.sh
+```
+If it fails, stop and show the user the error message. Do not proceed without uv and KREA_API_TOKEN.
 
 Before any creative work, understand the brand deeply. This phase has two halves: **technical extraction** (what's on the page) and **visual DNA analysis** (what the design choices *mean*). Both run on standard Claude Code tools — no custom agents required.
 
@@ -387,14 +386,14 @@ Example command sequence:
 
 ```bash
 # Step 1: locked still with product reference
-uv run [krea]/scripts/generate_image.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_image.py \
   --prompt "Hero product shot..." \
   --image-url "reference/product-clean.png" \
   --filename "images/01-hero-still.png" \
   --model nano-banana-pro --width 1280 --height 1024
 
 # Step 2: animate from that still (note: --start-image, NOT --image-url)
-uv run [krea]/scripts/generate_video.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_video.py \
   --prompt "Gentle camera push-in, product stays in frame, subtle material shimmer..." \
   --start-image "images/01-hero-still.png" \
   --filename "video/01-hero.mp4" \
@@ -444,7 +443,7 @@ If in doubt: generate a 5s Kling first. If the result feels stiff or the motion 
 
 ### The full Krea.ai toolkit
 
-`npx skills add krea-ai/skills` installs **7 scripts**. This skill primarily uses 2 (stills + video), but you should know the whole surface:
+The bundled scripts (at `${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/`) include **7 tools**. This skill primarily uses 2 (stills + video), but you should know the whole surface:
 
 | Script | Purpose | When `/pitch` uses it |
 |--------|---------|------------------------|
@@ -465,7 +464,7 @@ Krea's model catalog drifts. Version numbers change. New engines land. **The ski
 Before Phase 5 begins, run:
 
 ```bash
-uv run [krea-path]/scripts/list_models.py --json > /tmp/krea-models.json
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/list_models.py --json > /tmp/krea-models.json
 ```
 
 Parse the JSON to confirm:
@@ -488,40 +487,33 @@ If the model names below don't appear in the live list, pick the closest equival
 
 ```bash
 # Still (product)
-uv run [krea-plugin-path]/scripts/generate_image.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_image.py \
   --prompt "..." --filename "01-hero.png" \
   --model nano-banana-pro --width 1280 --height 1024
 
 # Still with character reference
-uv run [krea-plugin-path]/scripts/generate_image.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_image.py \
   --prompt "This exact person from the reference image..." \
   --image-url "reference/character-sheet.png" \
   --filename "05-chef-plating.png" \
   --model nano-banana-flash --width 1024 --height 1280
 
 # Video — text-to-video (ambient / no reference)
-uv run [krea-plugin-path]/scripts/generate_video.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_video.py \
   --prompt "..." --filename "07-hero.mp4" \
   --model kling-2.5 --duration 5 --aspect-ratio 16:9
 
 # Video — image-to-video (still-first → animate)
-uv run [krea-plugin-path]/scripts/generate_video.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/generate_video.py \
   --prompt "Gentle camera push-in, product stays in frame..." \
   --start-image "images/01-hero-still.png" \
   --filename "video/01-hero.mp4" \
   --model kling-2.5 --duration 5 --aspect-ratio 16:9
 ```
 
-**Parameter reference (from the official `krea-ai/skills` repo):**
+**Parameter reference:**
 - **Stills** (`generate_image.py`): `--prompt`, `--filename`, `--model`, `--width`, `--height`, `--aspect-ratio`, `--image-url` (for image-to-image with a reference), `--style-id`, `--style-strength`, `--seed`, `--steps`, `--guidance-scale`, `--quality`, `--batch-size`, `--output-dir`.
 - **Videos** (`generate_video.py`): `--prompt`, `--filename`, `--model`, `--duration`, `--aspect-ratio`, `--start-image` (for image-to-video starting frame — NOT `--image-url`), `--end-image` (optional — ending frame for interpolation-style videos), `--resolution`, `--mode`, `--generate-audio`, `--output-dir`.
-
-Resolve `[krea-plugin-path]` at invocation. Common locations after `npx skills add krea-ai/skills`:
-- `~/.claude/plugins/cache/*/krea-ai/*/scripts/`
-- `~/.claude/skills/krea-ai/scripts/`
-- Whatever `npx skills` placed locally — `find ~/.claude -name "generate_image.py" -path "*krea*" | head -1` finds it.
-
-If `find` returns nothing, the Krea.ai skills aren't installed — halt with a clear message pointing the user at `npx skills add krea-ai/skills`.
 
 ---
 
@@ -530,7 +522,7 @@ If `find` returns nothing, the Krea.ai skills aren't installed — halt with a c
 For the hero still that goes at the top of the landing page, consider upscaling before embedding:
 
 ```bash
-uv run [krea-path]/scripts/enhance_image.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/enhance_image.py \
   --input "images/01-hero.png" \
   --output "images/01-hero@4k.png" \
   --model topaz-standard-enhance \
@@ -545,7 +537,7 @@ Topaz enhancers: `topaz-standard-enhance` (safe default), `topaz-generative-enha
 For extended campaigns or returning clients, train a brand-specific LoRA once and use its `--style-id` across every generation for maximum consistency:
 
 ```bash
-uv run [krea-path]/scripts/train_style.py \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/pitch/scripts/train_style.py \
   --images "reference/brand-archive/*.jpg" \
   --trigger-word "brandname_v1" \
   --steps 1500 \
@@ -583,14 +575,25 @@ Common layout approaches (inspiration, not templates):
 - Immersive full-bleed — every section fills the viewport, minimal text
 - Split-screen — image/text dialogue
 
-### Step 2: Build with `/frontend-design`
+### Step 2: Build the landing page
 
-Pass the brand DNA as context, not rigid constraints. Let `/frontend-design` interpret.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/pitch/references/design-guidelines.md` for the design principles, then build the landing page directly as a single `index.html` file. Follow the design guidelines strictly — especially the absolute bans (no side-stripe borders, no gradient text) and the AI slop test.
 
-**Brief template:**
+For deeper guidance on specific aspects, read the relevant reference files:
+- Typography: `references/design-typography.md`
+- Colour: `references/design-colour.md`
+- Layout: `references/design-spatial.md`
+- Motion: `references/design-motion.md`
+- Interaction: `references/design-interaction.md`
+- Responsive: `references/design-responsive.md`
+- Copy: `references/design-ux-writing.md`
+
+Pass the brand DNA as context, not rigid constraints. Let the brand drive the design.
+
+**Brief structure:**
 
 ```
-/frontend-design Build a landing page for [Brand] — [product/concept].
+Build a landing page for [Brand] — [product/concept].
 
 BRAND DNA (extracted from [domain]):
 - Fonts: [display font] for headings, [body font] for copy, [accent if any]
@@ -609,36 +612,19 @@ Images at: [paths]. Videos at: [paths].
 Save to [output path]/index.html
 ```
 
-**Optional:** if `/high-end-visual-design` is installed, run it over the output to add expensive-feel details (fluid spacing, exponential easing, proper kerning, metric-matched fallbacks, no pure black/white). If not installed, `/polish` covers most of the same concerns.
+**Principle:** describe the brand, don't dictate the CSS. Make intelligent design decisions FROM brand context.
 
-**Principle:** describe the brand, don't dictate the CSS. Let the design skill make intelligent decisions FROM brand context.
+### Quality check
 
-### Step 3: Critique-first quality loop
+After building the page, self-assess against `references/design-guidelines.md`:
 
-**Don't run every polish skill by default** — it's slow and usually overkill for a pitch. Let `/critique` tell you what's actually broken, then fix only what matters.
+1. Run the **AI Slop Test**: If someone saw this and said "AI made this," would they believe it immediately? If yes, fix it.
+2. Check the **absolute bans**: no side-stripe borders (border-left > 1px), no gradient text (background-clip: text with gradient).
+3. Verify **font selection**: no fonts from the reflex reject list (Inter, Roboto, DM Sans, Space Grotesk, etc.).
+4. Check **colour**: no pure black/white, no purple-to-blue gradients, neutrals tinted toward brand hue.
+5. Check **layout**: not everything centred, varied spacing, no identical card grids.
 
-**Default loop (fast — 1 subagent pass):**
-
-1. **`/critique`** — AI-slop detection, visual hierarchy check, persona red flags, scored out of 40. Identifies the specific issues worth fixing.
-2. **Read the critique output.** If the score is ≥30/40 and there are no Critical issues — **ship it**. Stop.
-3. **If `/critique` flags specific issues**, run ONLY the matching targeted fix:
-
-| Critique flag | Targeted fix |
-|---------------|--------------|
-| Typography hierarchy muddy, line length off, scale inconsistent | `/typeset` |
-| Alignment / spacing / a11y / interaction states weak | `/polish` |
-| Feels safe, generic, template-like | `/bolder` |
-| Mobile layout feels squeezed, not adapted | `/adapt` |
-| Static, no motion, dead | `/animate` |
-| Palette feels off, monochromatic, dull | `/colorize` |
-| Cluttered, too much happening | `/distill` |
-| Too loud, overstimulating | `/quieter` |
-
-**Full polish loop (slower — run all passes):**
-
-Only when producing a production-grade deliverable for a paying client. Opt-in via `--full-polish` flag or when the user explicitly asks. Order: `/typeset` → `/polish` → `/critique`. Adds ~3–5 minutes.
-
-**Pragmatic default:** `/frontend-design` + `/critique` + one or two targeted fixes based on critique findings. Ships in ~2 minutes of post-generation work instead of 5+.
+Fix any violations before serving.
 
 ### Step 4: Serve + verify
 
@@ -669,7 +655,7 @@ Open http://localhost:8888 and verify:
 11. CTA — price/booking + button with focus-visible state
 12. Footer — "Shot entirely with AI — [tools used]" + back-to-top
 
-### Must-haves (enforced by `/polish` + optionally `/high-end-visual-design`)
+### Must-haves (enforced by quality check)
 
 - Fluid spacing with `clamp()` — breathes on larger screens
 - Exponential easing (`ease-out-expo`) — not generic `ease`
@@ -746,6 +732,4 @@ Default save location: `./[brand-slug]/` in the current working directory. Users
 ## Non-goals
 
 - This skill does NOT host the landing page — it serves locally. Deploy separately (Vercel, Netlify, etc.).
-- This skill does NOT bundle its own image-gen — it requires the Krea.ai plugin.
-- This skill does NOT replace `/frontend-design` or `/critique` — it orchestrates them.
-- This skill does NOT require any custom MCP server or personal agent. Everything runs on tools available to every Claude Code install plus the three listed dependency plugins.
+- This skill does NOT require any custom MCP server or personal agent. Everything runs on tools available to every Claude Code install plus the bundled scripts and design references.
